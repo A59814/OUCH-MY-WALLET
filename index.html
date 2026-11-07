@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#0b1020"/>
+<title>Ouch! Wallet</title>
+<style>
+:root{
+  --bg:#0b1020; --bg2:#131a33; --card:#171f3d; --line:rgba(255,255,255,.08);
+  --txt:#e8ecf7; --mut:#8f9bc2; --accent:#fbbf24; --danger:#f87171; --good:#34d399;
+  --w1:#f59e0b; --w2:#b45309; --w3:#fbbf24; --w4:#1f2937; --eye:#0b1020; --blush:#fb7185;
+  --r:20px; --shadow:0 20px 40px rgba(0,0,0,.35);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+[data-theme="light"]{
+  --bg:#f7f8fc; --bg2:#eef1f8; --card:#ffffff; --line:rgba(15,23,42,.08);
+  --txt:#0b1020; --mut:#5b678a; --eye:#0b1020; --w4:#e5e7eb;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Kufi Arabic",Tahoma,sans-serif;background:radial-gradient(1200px 800px at 50% -10%, var(--bg2), var(--bg));color:var(--txt)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select{font:inherit;color:inherit}
+
+#app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top,0)) 16px calc(20px + var(--safe-b))}
+
+/* topbar */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.brand{font-weight:800;letter-spacing:.5px;font-size:18px}
+.brand span{color:var(--accent)}
+.icon-btn{width:40px;height:40px;border-radius:12px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:16px;transition:.2s}
+.icon-btn:active{transform:scale(.92)}
+
+/* stage */
+.stage{position:relative;display:flex;flex-direction:column;align-items:center;padding:8px 0 14px}
+.wallet-wrap{width:220px;height:220px;position:relative;filter:drop-shadow(0 18px 30px rgba(0,0,0,.45))}
+.wallet{width:100%;height:100%;display:block;transition:transform .3s}
+.wallet-wrap.happy .wallet{animation:bounce .7s ease}
+.wallet-wrap.hurt .wallet{animation:shake .45s ease}
+.wallet-wrap.worried .wallet{animation:wobble 2.4s ease-in-out infinite}
+.wallet-wrap{animation:breathe 3.6s ease-in-out infinite}
+
+@keyframes breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.015)}}
+@keyframes bounce{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-16px) scale(1.08)}60%{transform:translateY(0) scale(.96)}100%{transform:translateY(0) scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0) rotate(0)}20%{transform:translateX(-8px) rotate(-4deg)}40%{transform:translateX(8px) rotate(4deg)}60%{transform:translateX(-6px) rotate(-3deg)}80%{transform:translateX(6px) rotate(2deg)}}
+@keyframes wobble{0%,100%{transform:rotate(-1deg)}50%{transform:rotate(1deg)}}
+
+.wallet{color:var(--txt)}
+.wallet .sparkles,.wallet .tears{transition:opacity .4s}
+.wallet-wrap.happy .sparkles{opacity:1}
+.wallet-wrap.hurt .tears{opacity:1}
+.wallet-wrap.hurt .eyes{transform:scaleY(.35);transform-origin:120px 130px;transition:transform .2s}
+.wallet-wrap.happy .eyes{transform:scaleY(1.05);transition:transform .3s}
+.wallet-wrap.worried .brow-l{transform:translateY(2px) rotate(8deg);transform-origin:90px 112px}
+.wallet-wrap.worried .brow-r{transform:translateY(2px) rotate(-8deg);transform-origin:150px 112px}
+
+.balance-card{text-align:center;margin-top:-6px}
+.balance-card .lbl{font-size:12px;color:var(--mut);letter-spacing:1px}
+.balance-card .amt{font-size:40px;font-weight:800;letter-spacing:.5px;line-height:1.1;margin:2px 0}
+.balance-card .sub{font-size:12px;color:var(--mut)}
+.progress{width:220px;height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin:8px auto 0}
+.progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--good),var(--accent),var(--danger));transition:width .5s}
+
+/* actions */
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 14px}
+.action{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;font-weight:600;transition:.15s}
+.action:active{transform:scale(.96)}
+.action .ico{font-size:20px;font-weight:800}
+.action-in .ico{color:var(--good)}
+.action-out .ico{color:var(--danger)}
+.action-report .ico{filter:grayscale(.2)}
+
+/* recent */
+.recent{flex:1;display:flex;flex-direction:column;gap:8px}
+.recent h3{font-size:13px;color:var(--mut);font-weight:600;letter-spacing:.5px;margin:4px 0}
+#txList{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.tx{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;animation:pop .3s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.tx .ic{width:36px;height:36px;border-radius:10px;background:var(--bg2);display:grid;place-items:center;font-size:18px}
+.tx .meta{flex:1;min-width:0}
+.tx .meta .n{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx .meta .d{font-size:11px;color:var(--mut)}
+.tx .amt{font-weight:700;font-size:14px}
+.tx.in .amt{color:var(--good)}
+.tx.out .amt{color:var(--danger)}
+.empty{text-align:center;color:var(--mut);padding:22px;font-size:13px;border:1px dashed var(--line);border-radius:14px}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(3,6,18,.65);backdrop-filter:blur(6px);display:none;align-items:flex-end;z-index:50}
+.modal.open{display:flex;animation:fade .2s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{width:100%;max-width:480px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-top-left-radius:24px;border-top-right-radius:24px;padding:20px 18px calc(20px + var(--safe-b));max-height:88dvh;overflow:auto;animation:slide .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes slide{from{transform:translateY(100%)}to{transform:none}}
+.sheet h2{margin:0 0 4px;font-size:18px}
+.sheet .hint{color:var(--mut);font-size:12px;margin-bottom:14px}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:10px 0}
+.amount-input{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:16px;font-size:28px;font-weight:800;text-align:center;color:var(--txt);outline:none}
+.amount-input:focus{border-color:var(--accent)}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.chip{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;transition:.15s}
+.chip.on{background:var(--accent);color:#111;border-color:var(--accent);font-weight:700}
+.chip .e{font-size:20px}
+.note{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--txt);outline:none}
+.btn{width:100%;padding:14px;border-radius:14px;font-weight:800;font-size:15px;transition:.15s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:#111}
+.btn-danger{background:rgba(248,113,113,.15);color:var(--danger);border:1px solid rgba(248,113,113,.3)}
+.btn-ghost{background:var(--bg2);border:1px solid var(--line)}
+.btn + .btn{margin-top:8px}
+.btns-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btns-grid .btn{margin-top:0}
+
+/* settings */
+.toggle{width:46px;height:26px;background:var(--bg2);border-radius:99px;position:relative;border:1px solid var(--line);transition:.2s}
+.toggle::after{content:"";position:absolute;top:2px;right:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s}
+.toggle.on{background:var(--accent)}
+.toggle.on::after{transform:translateX(-20px)}
+[dir="ltr"] .toggle::after{right:auto;left:2px}
+[dir="ltr"] .toggle.on::after{transform:translateX(20px)}
+
+/* report */
+.report-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 16px}
+.stat{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.stat .v{font-size:22px;font-weight:800}
+.stat .k{font-size:11px;color:var(--mut);margin-top:2px}
+.stat.good .v{color:var(--good)}
+.stat.bad .v{color:var(--danger)}
+.story{background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(248,113,113,.12));border:1px solid var(--line);border-radius:16px;padding:16px;font-size:14px;line-height:1.7}
+.story b{color:var(--accent)}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-b));transform:translate(-50%,20px);background:#111a33;border:1px solid var(--line);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* onboarding */
+.onb-art{font-size:64px;text-align:center;margin:6px 0 10px}
+.onb-list{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.onb-item{display:flex;gap:12px;align-items:flex-start;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px}
+.onb-item .e{font-size:22px}
+.onb-item .t{font-size:13px;line-height:1.6}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <button class="icon-btn" id="settingsBtn" aria-label="settings">⚙️</button>
+    <div class="brand">Ouch! <span>Wallet</span></div>
+    <button class="icon-btn" id="langBtn" aria-label="language">EN</button>
+  </header>
+
+  <section class="stage">
+    <div class="wallet-wrap" id="walletWrap">
+      <svg class="wallet" id="walletSvg" viewBox="0 0 240 240" data-state="neutral" aria-hidden="true">
+        <defs>
+          <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="var(--w1)"/>
+            <stop offset="1" stop-color="var(--w2)"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="120" cy="222" rx="74" ry="9" fill="rgba(0,0,0,.35)"/>
+        <rect x="36" y="70" width="168" height="135" rx="26" fill="url(#gBody)" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+        <path d="M36 96 Q36 70 62 70 L178 70 Q204 70 204 96 L204 112 Q120 130 36 112 Z" fill="var(--w3)" opacity=".55"/>
+        <rect x="168" y="118" width="28" height="22" rx="9" fill="var(--w4)" opacity=".9"/>
+        <circle cx="78" cy="152" r="11" fill="var(--blush)" opacity=".55"/>
+        <circle cx="162" cy="152" r="11" fill="var(--blush)" opacity=".55"/>
+        <g class="eyes">
+          <ellipse cx="90" cy="130" rx="10" ry="13" fill="var(--eye)"/>
+          <ellipse cx="150" cy="130" rx="10" ry="13" fill="var(--eye)"/>
+          <circle cx="92" cy="125" r="3.2" fill="#fff" opacity=".95"/>
+          <circle cx="152" cy="125" r="3.2" fill="#fff" opacity=".95"/>
+        </g>
+        <path class="brow brow-l" d="M78 112 Q90 106 102 112" stroke="var(--eye)" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path class="brow brow-r" d="M138 112 Q150 106 162 112" stroke="var(--eye)" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path class="mouth" d="M104 160 Q120 172 136 160" stroke="var(--eye)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <g class="sparkles" opacity="0">
+          <text x="46" y="102" font-size="18">✨</text>
+          <text x="182" y="98" font-size="16">✨</text>
+          <text x="56" y="200" font-size="14">✨</text>
+          <text x="186" y="200" font-size="14">✨</text>
+        </g>
+        <g class="tears" opacity="0">
+          <ellipse cx="80" cy="152" rx="4" ry="8" fill="#7dd3fc"/>
+          <ellipse cx="160" cy="152" rx="4" ry="8" fill="#7dd3fc"/>
+        </g>
+      </svg>
+    </div>
+    <div class="balance-card">
+      <div class="lbl" id="balanceLbl">الرصيد</div>
+      <div class="amt" id="balanceAmt">0.00</div>
+      <div class="sub" id="balanceSub">—</div>
+      <div class="progress"><i id="budgetBar"></i></div>
+    </div>
+  </section>
+
+  <section class="actions">
+    <button class="action action-in" id="addInBtn">
+      <span class="ico">+</span><span id="lblIn">دخل</span>
+    </button>
+    <button class="action action-out" id="addOutBtn">
+      <span class="ico">−</span><span id="lblOut">مصروف</span>
+    </button>
+    <button class="action action-report" id="reportBtn">
+      <span class="ico">📊</span><span id="lblReport">التقرير</span>
+    </button>
+  </section>
+
+  <section class="recent">
+    <h3 id="recentLbl">آخر المعاملات</h3>
+    <ul id="txList"></ul>
+  </section>
+
+</div>
+
+<!-- Add Modal -->
+<div class="modal" id="addModal">
+  <div class="sheet">
+    <h2 id="addTitle">إضافة دخل</h2>
+    <div class="hint" id="addHint">أدخل المبلغ واختر الفئة ثم اضغط حفظ</div>
+    <input class="amount-input" id="amountInput" type="text" inputmode="decimal" placeholder="0.00"/>
+    <div class="chips" id="catChips"></div>
+    <input class="note" id="noteInput" type="text" maxlength="40" placeholder="ملاحظة (اختياري)"/>
+    <button class="btn btn-primary" id="saveTxBtn" style="margin-top:14px">حفظ</button>
+    <button class="btn btn-ghost" id="cancelTxBtn">إلغاء</button>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal" id="reportModal">
+  <div class="sheet">
+    <h2 id="reportTitle">التقرير الأسبوعي</h2>
+    <div class="hint" id="reportRange"></div>
+    <div class="report-stats">
+      <div class="stat bad"><div class="v" id="statOuch">0</div><div class="k" id="kOuch">أوتش</div></div>
+      <div class="stat good"><div class="v" id="statGood">0</div><div class="k" id="kGood">Good Job</div></div>
+      <div class="stat"><div class="v" id="statOut">0</div><div class="k" id="kOut">إجمالي المصروفات</div></div>
+      <div class="stat"><div class="v" id="statIn">0</div><div class="k" id="kIn">إجمالي الدخل</div></div>
+    </div>
+    <div class="story" id="reportStory">—</div>
+    <button class="btn btn-primary" id="closeReportBtn" style="margin-top:14px">تم</button>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal" id="settingsModal">
+  <div class="sheet">
+    <h2 id="setTitle">الإعدادات</h2>
+    <div class="hint">اضبط تجربتك كما تحب</div>
+
+    <div class="row">
+      <span id="setLang">اللغة</span>
+      <button class="btn btn-ghost" id="setLangBtn" style="width:auto;padding:8px 14px;margin:0">العربية / English</button>
+    </div>
+    <div class="row">
+      <span id="setSound">الصوت</span>
+      <div class="toggle" id="setSoundToggle"></div>
+    </div>
+    <div class="row">
+      <span id="setHaptic">الاهتزاز</span>
+      <div class="toggle" id="setHapticToggle"></div>
+    </div>
+    <div class="row">
+      <span id="setTheme">الوضع الليلي</span>
+      <div class="toggle" id="setThemeToggle"></div>
+    </div>
+    <div class="row" style="flex-direction:column;align-items:stretch;gap:6px">
+      <span id="setBudget">الميزانية الأسبوعية</span>
+      <input class="note" id="budgetInput" type="text" inputmode="decimal" placeholder="0"/>
+    </div>
+
+    <button class="btn btn-ghost" id="exportBtn">تصدير البيانات (JSON)</button>
+    <button class="btn btn-ghost" id="importBtn">استيراد البيانات</button>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none"/>
+    <button class="btn btn-danger" id="resetBtn">حذف كل البيانات</button>
+    <button class="btn btn-primary" id="closeSetBtn">تم</button>
+  </div>
+</div>
+
+<!-- Onboarding -->
+<div class="modal" id="onbModal">
+  <div class="sheet">
+    <div class="onb-art">👛</div>
+    <h2 id="onbTitle">مرحبًا في Ouch! Wallet</h2>
+    <div class="hint" id="onbHint">محفظتك كائن حي يشعر بك — ادخر تُسعدها، وأنفق تُوجعها.</div>
+    <div class="onb-list" id="onbList"></div>
+    <button class="btn btn-primary" id="onbStart">هيا نبدأ</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================== i18n ================== */
+const I18N = {
+  ar: {
+    lang:"العربية",
+    balance:"الرصيد", balanceSub:(cur)=>`العملة: ${cur}`,
+    weekSpent:(s,b)=>`هذا الأسبوع: ${s} من ${b}`,
+    in:"دخل", out:"مصروف", report:"التقرير",
+    recent:"آخر المعاملات",
+    addIn:"إضافة دخل", addOut:"إضافة مصروف",
+    amountPh:"0.00", notePh:"ملاحظة (اختياري)", save:"حفظ", cancel:"إلغاء",
+    categoriesIn:{salary:"راتب",freelance:"عمل حر",gift:"هدية",other:"أخرى"},
+    categoriesOut:{food:"طعام",transport:"مواصلات",shopping:"تسوق",bills:"فواتير",fun:"ترفيه",health:"صحة",education:"تعليم",other:"أخرى"},
+    catIcons:{food:"🍔",transport:"🚗",shopping:"🛍️",bills:"📄",fun:"🎬",health:"💊",education:"📚",other:"📦",salary:"💰",freelance:"💼",gift:"🎁"},
+    txEmpty:"لا توجد معاملات بعد. اضغط + لتبدأ.",
+    toastIn:"أُضيف الدخل — Good Job! 💚", toastOut:"تم تسجيل المصروف — أوتش! 💔",
+    reportTitle:"التقرير الأسبوعي",
+    reportRange:(a,b)=>`${a} — ${b}`,
+    ouch:"أوتش", goodJob:"Good Job", totalOut:"إجمالي المصروفات", totalIn:"إجمالي الدخل",
+    reportStory:(data)=>{
+      if(data.totalOut===0 && data.totalIn===0) return "لا شيء بعد! ابدأ بتسجيل أول معاملة.";
+      const parts=[];
+      parts.push(`هذا الأسبوع تعرّضت محفظتك لـ <b>${data.ouchCount}</b> طعنة (أوتش)، وقابلتها <b>${data.goodCount}</b> مرة بـ Good Job.`);
+      if(data.biggest){parts.push(`أكبر جرح كان في فئة <b>${data.biggest}</b> بقيمة <b>${data.biggestAmt}</b>.`);}
+      if(data.ouchCount>data.goodCount) parts.push("يبدو أن محفظتك تحتاج قسطًا من الراحة… خفف التسوق قليلًا. 😅");
+      else if(data.goodCount>data.ouchCount) parts.push("أداء ممتاز! محفظتك فخورة بك. 🌟");
+      else parts.push("توازن مثير للاهتمام… استمر في المراقبة. 👀");
+      return parts.join(" ");
+    },
+    setTitle:"الإعدادات", setLang:"اللغة", setSound:"الصوت", setHaptic:"الاهتزاز", setTheme:"الوضع الليلي", setBudget:"الميزانية الأسبوعية",
+    exportBtn:"تصدير البيانات (JSON)", importBtn:"استيراد البيانات", resetBtn:"حذف كل البيانات", done:"تم",
+    confirmReset:"هل تريد حذف كل البيانات؟ لا يمكن التراجع.",
+    onbTitle:"مرحبًا في Ouch! Wallet",
+    onbHint:"محفظتك كائن حي — اضبط إيقاعك المالي بالمرح.",
+    onbList:[
+      {e:"💚",t:"سجّل الدخل لترى محفظتك تفرح وتقول لك Good Job."},
+      {e:"💔",t:"سجّل المصروف بصوت 'أوتش' — كلما زاد المبلغ زاد الألم."},
+      {e:"📊",t:"بعد أسبوع، افتح التقرير لتقرأ قصة محفظتك."}
+    ],
+    onbStart:"هيا نبدأ", currency:"USD",
+    settingsSaved:"تم الحفظ", importOk:"تم الاستيراد بنجاح", importErr:"ملف غير صالح"
+  },
+  en: {
+    lang:"English",
+    balance:"Balance", balanceSub:(cur)=>`Currency: ${cur}`,
+    weekSpent:(s,b)=>`This week: ${s} of ${b}`,
+    in:"Income", out:"Expense", report:"Report",
+    recent:"Recent transactions",
+    addIn:"Add income", addOut:"Add expense",
+    amountPh:"0.00", notePh:"Note (optional)", save:"Save", cancel:"Cancel",
+    categoriesIn:{salary:"Salary",freelance:"Freelance",gift:"Gift",other:"Other"},
+    categoriesOut:{food:"Food",transport:"Transport",shopping:"Shopping",bills:"Bills",fun:"Fun",health:"Health",education:"Education",other:"Other"},
+    catIcons:{food:"🍔",transport:"🚗",shopping:"🛍️",bills:"📄",fun:"🎬",health:"💊",education:"📚",other:"📦",salary:"💰",freelance:"💼",gift:"🎁"},
+    txEmpty:"No transactions yet. Tap + to start.",
+    toastIn:"Income added — Good Job! 💚", toastOut:"Expense logged — Ouch! 💔",
+    reportTitle:"Weekly Report",
+    reportRange:(a,b)=>`${a} — ${b}`,
+    ouch:"Ouch", goodJob:"Good Job", totalOut:"Total expenses", totalIn:"Total income",
+    reportStory:(data)=>{
+      if(data.totalOut===0 && data.totalIn===0) return "Nothing yet! Start by logging your first transaction.";
+      const parts=[];
+      parts.push(`This week your wallet took <b>${data.ouchCount}</b> stabs (Ouch), and celebrated <b>${data.goodCount}</b> times with a Good Job.`);
+      if(data.biggest){parts.push(`The biggest wound was in <b>${data.biggest}</b> for <b>${data.biggestAmt}</b>.`);}
+      if(data.ouchCount>data.goodCount) parts.push("Your wallet needs a break… ease up on the shopping. 😅");
+      else if(data.goodCount>data.ouchCount) parts.push("Excellent! Your wallet is proud of you. 🌟");
+      else parts.push("Interesting balance… keep an eye on it. 👀");
+      return parts.join(" ");
+    },
+    setTitle:"Settings", setLang:"Language", setSound:"Sound", setHaptic:"Haptics", setTheme:"Dark mode", setBudget:"Weekly budget",
+    exportBtn:"Export data (JSON)", importBtn:"Import data", resetBtn:"Delete all data", done:"Done",
+    confirmReset:"Delete all data? This cannot be undone.",
+    onbTitle:"Welcome to Ouch! Wallet",
+    onbHint:"Your wallet is a living creature — master your money with humor.",
+    onbList:[
+      {e:"💚",t:"Log income and watch your wallet cheer with a Good Job."},
+      {e:"💔",t:"Log expenses with an 'Ouch' — the bigger the amount, the louder the pain."},
+      {e:"📊",t:"After a week, open the report to read your wallet's story."}
+    ],
+    onbStart:"Let's go", currency:"USD",
+    settingsSaved:"Saved", importOk:"Imported successfully", importErr:"Invalid file"
+  }
+};
+
+/* ================== State & Storage ================== */
+const STORAGE_KEY = "ouch_wallet_v1";
+const defaultState = () => ({
+  version:1,
+  lang: (navigator.language||"en").startsWith("ar") ? "ar" : "en",
+  currency: "USD",
+  budget: 100,
+  soundOn: true,
+  hapticOn: true,
+  theme: "dark",
+  onboarded: false,
+  transactions: []
+});
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    const s = JSON.parse(raw);
+    return Object.assign(defaultState(), s);
+  }catch(e){ return defaultState(); }
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+/* ================== i18n helpers ================== */
+function t(){ return I18N[state.lang]; }
+function fmtMoney(n){
+  try{
+    return new Intl.NumberFormat(state.lang==="ar"?"ar":"en", {style:"currency",currency:state.currency,maximumFractionDigits:2}).format(n);
+  }catch(e){ return n.toFixed(2)+" "+state.currency; }
+}
+function fmtDate(ts){
+  return new Intl.DateTimeFormat(state.lang==="ar"?"ar":"en",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date(ts));
+}
+
+/* ================== Audio (synthesized) ================== */
+let actx = null;
+function ac(){
+  if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(actx && actx.state==="suspended") actx.resume();
+  return actx;
+}
+function playGoodJob(){
+  if(!state.soundOn) return;
+  const ctx = ac(); if(!ctx) return;
+  const now = ctx.currentTime;
+  const notes = [523.25, 659.25, 783.99, 1046.50];
+  notes.forEach((f,i)=>{
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type="sine"; o.frequency.value=f;
+    const t0 = now + i*0.09;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(0.18, t0+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t0+0.45);
+    o.connect(g).connect(ctx.destination);
+    o.start(t0); o.stop(t0+0.5);
+  });
+  // coin shimmer
+  const sh = ctx.createBufferSource();
+  const buf = ctx.createBuffer(1, ctx.sampleRate*0.4, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<data.length;i++) data[i] = (Math.random()*2-1) * Math.pow(1-i/data.length, 3);
+  sh.buffer = buf;
+  const g = ctx.createGain(); g.gain.value = 0.05;
+  const hp = ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=4000;
+  sh.connect(hp).connect(g).connect(ctx.destination);
+  sh.start(now+0.15);
+}
+function playOuch(intensity){ // 0..1
+  if(!state.soundOn) return;
+  const ctx = ac(); if(!ctx) return;
+  const now = ctx.currentTime;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = intensity>0.6 ? "sawtooth" : "triangle";
+  const start = 420 + intensity*220;
+  const end = 90 + (1-intensity)*70;
+  const dur = 0.28 + intensity*0.55;
+  o.frequency.setValueAtTime(start, now);
+  o.frequency.exponentialRampToValueAtTime(end, now+dur);
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.22 + intensity*0.18, now+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, now+dur);
+  o.connect(g).connect(ctx.destination);
+  o.start(now); o.stop(now+dur+0.05);
+  if(intensity>0.7){
+    setTimeout(()=>playOuch(0.35), 160);
+  }
+}
+
+/* ================== Haptics ================== */
+function haptic(pattern){
+  if(!state.hapticOn) return;
+  if(navigator.vibrate) navigator.vibrate(pattern);
+}
+
+/* ================== UI helpers ================== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+function showToast(msg){
+  const el = $("#toast"); el.textContent = msg; el.classList.add("show");
+  clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove("show"), 1800);
+}
+function openModal(id){ $("#"+id).classList.add("open"); }
+function closeModal(id){ $("#"+id).classList.remove("open"); }
+function applyLang(){
+  const i = t();
+  document.documentElement.lang = state.lang;
+  document.documentElement.dir = state.lang==="ar" ? "rtl" : "ltr";
+  $("#langBtn").textContent = state.lang==="ar" ? "EN" : "ع";
+  $("#balanceLbl").textContent = i.balance;
+  $("#lblIn").textContent = i.in;
+  $("#lblOut").textContent = i.out;
+  $("#lblReport").textContent = i.report;
+  $("#recentLbl").textContent = i.recent;
+  $("#amountInput").placeholder = i.amountPh;
+  $("#noteInput").placeholder = i.notePh;
+  $("#saveTxBtn").textContent = i.save;
+  $("#cancelTxBtn").textContent = i.cancel;
+  $("#reportTitle").textContent = i.reportTitle;
+  $("#kOuch").textContent = i.ouch;
+  $("#kGood").textContent = i.goodJob;
+  $("#kOut").textContent = i.totalOut;
+  $("#kIn").textContent = i.totalIn;
+  $("#closeReportBtn").textContent = i.done;
+  $("#setTitle").textContent = i.setTitle;
+  $("#setLang").textContent = i.setLang;
+  $("#setSound").textContent = i.setSound;
+  $("#setHaptic").textContent = i.setHaptic;
+  $("#setTheme").textContent = i.setTheme;
+  $("#setBudget").textContent = i.setBudget;
+  $("#exportBtn").textContent = i.exportBtn;
+  $("#importBtn").textContent = i.importBtn;
+  $("#resetBtn").textContent = i.resetBtn;
+  $("#closeSetBtn").textContent = i.done;
+  $("#onbTitle").textContent = i.onbTitle;
+  $("#onbHint").textContent = i.onbHint;
+  $("#onbStart").textContent = i.onbStart;
+  $("#onbList").innerHTML = i.onbList.map(x=>`<div class="onb-item"><div class="e">${x.e}</div><div class="t">${x.t}</div></div>`).join("");
+}
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme", state.theme);
+}
+function applyToggles(){
+  $("#setSoundToggle").classList.toggle("on", state.soundOn);
+  $("#setHapticToggle").classList.toggle("on", state.hapticOn);
+  $("#setThemeToggle").classList.toggle("on", state.theme==="dark");
+  $("#budgetInput").value = state.budget;
+}
+
+/* ================== Stats / Health ================== */
+function startOfWeek(){
+  const d = new Date(); const day = d.getDay(); // 0=Sun
+  const diff = d.getDate() - day; // week starts Sun
+  const s = new Date(d); s.setDate(diff); s.setHours(0,0,0,0); return s.getTime();
+}
+function thisWeekTx(){
+  const w = startOfWeek();
+  return state.transactions.filter(tx => tx.ts >= w);
+}
+function computeStats(){
+  const week = thisWeekTx();
+  const outs = week.filter(x=>x.type==="out");
+  const ins = week.filter(x=>x.type==="in");
+  const totalOut = outs.reduce((a,b)=>a+b.amount,0);
+  const totalIn = ins.reduce((a,b)=>a+b.amount,0);
+  const ouchCount = outs.length;
+  const goodCount = ins.length;
+
+  // biggest expense
+  let biggest=null;
+  outs.forEach(x=>{ if(!biggest || x.amount>biggest.amount) biggest = x; });
+  const bigCat = biggest ? (t().categoriesOut[biggest.category]||biggest.category) : null;
+
+  // all-time balance
+  const balance = state.transactions.reduce((a,tx)=> a + (tx.type==="in"? tx.amount : -tx.amount), 0);
+
+  return {totalOut,totalIn,ouchCount,goodCount,biggest:bigCat,biggestAmt:biggest?fmtMoney(biggest.amount):null,balance,week};
+}
+function updateWalletMood(){
+  const s = computeStats();
+  const usage = state.budget>0 ? Math.min(1, s.totalOut/state.budget) : 0;
+  const wrap = $("#walletWrap");
+  wrap.classList.remove("happy","hurt","worried");
+  if(usage < 0.4) { /* neutral */ }
+  else if(usage < 0.85) wrap.classList.add("worried");
+  else wrap.classList.add("hurt");
+
+  $("#budgetBar").style.width = Math.round(usage*100)+"%";
+  $("#balanceAmt").textContent = fmtMoney(s.balance);
+  $("#balanceSub").textContent = t().weekSpent(fmtMoney(s.totalOut), fmtMoney(state.budget));
+}
+function react(kind, intensity=0.5){
+  const wrap = $("#walletWrap");
+  wrap.classList.remove("happy","hurt","worried");
+  if(kind==="in"){
+    wrap.classList.add("happy");
+    playGoodJob();
+    haptic([15,30,15]);
+    setTimeout(()=>wrap.classList.remove("happy"), 900);
+  } else {
+    const cls = intensity>0.6 ? "hurt" : "worried";
+    wrap.classList.add(cls);
+    playOuch(intensity);
+    haptic(intensity>0.6 ? [40,30,40,30,60] : [20]);
+    setTimeout(()=>wrap.classList.remove(cls), 900);
+  }
+  // face state
+  $("#walletSvg").setAttribute("data-state", kind==="in" ? "happy" : (intensity>0.6 ? "hurt" : "worried"));
+  setTimeout(()=>$("#walletSvg").setAttribute("data-state","neutral"), 900);
+}
+
+/* ================== Render ================== */
+function renderTxList(){
+  const list = $("#txList");
+  const items = [...state.transactions].sort((a,b)=>b.ts-a.ts).slice(0,20);
+  if(items.length===0){
+    list.innerHTML = `<li class="empty">${t().txEmpty}</li>`;
+    return;
+  }
+  list.innerHTML = items.map(tx=>{
+    const i = t();
+    const cat = (tx.type==="in" ? i.categoriesIn[tx.category] : i.categoriesOut[tx.category]) || tx.category;
+    const ico = i.catIcons[tx.category] || "•";
+    const sign = tx.type==="in" ? "+" : "−";
+    return `<li class="tx ${tx.type}">
+      <div class="ic">${ico}</div>
+      <div class="meta"><div class="n">${tx.note || cat}</div><div class="d">${fmtDate(tx.ts)} • ${cat}</div></div>
+      <div class="amt">${sign}${fmtMoney(tx.amount)}</div>
+    </li>`;
+  }).join("");
+}
+
+/* ================== Transaction flow ================== */
+let currentType = "out";
+let currentCat = "food";
+
+function openAdd(type){
+  currentType = type;
+  currentCat = type==="in" ? "salary" : "food";
+  const i = t();
+  $("#addTitle").textContent = type==="in" ? i.addIn : i.addOut;
+  renderChips();
+  $("#amountInput").value = "";
+  $("#noteInput").value = "";
+  openModal("addModal");
+  setTimeout(()=>$("#amountInput").focus(), 100);
+}
+function renderChips(){
+  const i = t();
+  const cats = currentType==="in" ? i.categoriesIn : i.categoriesOut;
+  const wrap = $("#catChips");
+  wrap.innerHTML = Object.keys(cats).map(k=>{
+    const ico = i.catIcons[k]||"•";
+    return `<button class="chip ${k===currentCat?"on":""}" data-cat="${k}">
+      <span class="e">${ico}</span><span>${cats[k]}</span>
+    </button>`;
+  }).join("");
+  wrap.querySelectorAll(".chip").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      currentCat = el.dataset.cat;
+      wrap.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+      el.classList.add("on");
+    });
+  });
+}
+function parseAmount(str){
+  if(!str) return 0;
+  const cleaned = String(str).replace(/[^\d.,-]/g,"").replace(",",".");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : Math.abs(n);
+}
+function saveTx(){
+  const amount = parseAmount($("#amountInput").value);
+  if(amount<=0){ showToast(t().amountPh); return; }
+  const note = $("#noteInput").value.trim();
+  const tx = { id: Date.now()+"_"+Math.random().toString(36).slice(2,7), type: currentType, amount, category: currentCat, note, ts: Date.now() };
+  state.transactions.push(tx);
+  saveState();
+  closeModal("addModal");
+  renderTxList();
+  updateWalletMood();
+
+  // react
+  if(currentType==="in"){
+    react("in");
+    showToast(t().toastIn);
+  } else {
+    const usage = state.budget>0 ? Math.min(1, amount/state.budget) : 0.4;
+    const intensity = Math.min(1, 0.2 + usage*1.2);
+    react("out", intensity);
+    showToast(t().toastOut);
+  }
+}
+
+/* ================== Report ================== */
+function openReport(){
+  const s = computeStats();
+  const i = t();
+  const now = new Date();
+  const start = new Date(startOfWeek());
+  $("#reportRange").textContent = i.reportRange(
+    new Intl.DateTimeFormat(state.lang==="ar"?"ar":"en",{day:"2-digit",month:"short"}).format(start),
+    new Intl.DateTimeFormat(state.lang==="ar"?"ar":"en",{day:"2-digit",month:"short"}).format(now)
+  );
+  $("#statOuch").textContent = s.ouchCount;
+  $("#statGood").textContent = s.goodCount;
+  $("#statOut").textContent = fmtMoney(s.totalOut);
+  $("#statIn").textContent = fmtMoney(s.totalIn);
+  $("#reportStory").innerHTML = i.reportStory(s);
+  openModal("reportModal");
+}
+
+/* ================== Settings ================== */
+function openSettings(){ applyToggles(); openModal("settingsModal"); }
+function bindSettings(){
+  $("#settingsBtn").addEventListener("click", openSettings);
+  $("#closeSetBtn").addEventListener("click", ()=>closeModal("settingsModal"));
+
+  $("#setSoundToggle").addEventListener("click", ()=>{
+    state.soundOn = !state.soundOn; saveState(); applyToggles();
+  });
+  $("#setHapticToggle").addEventListener("click", ()=>{
+    state.hapticOn = !state.hapticOn; saveState(); applyToggles();
+  });
+  $("#setThemeToggle").addEventListener("click", ()=>{
+    state.theme = state.theme==="dark" ? "light" : "dark"; saveState(); applyTheme(); applyToggles();
+  });
+  $("#budgetInput").addEventListener("change", ()=>{
+    const v = parseAmount($("#budgetInput").value);
+    state.budget = v||0; saveState(); updateWalletMood();
+  });
+  $("#setLangBtn").addEventListener("click", ()=>{
+    state.lang = state.lang==="ar" ? "en" : "ar"; saveState();
+    applyLang(); applyToggles(); renderTxList(); updateWalletMood();
+  });
+
+  $("#exportBtn").addEventListener("click", ()=>{
+    const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ouch-wallet-backup.json";
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  });
+  $("#importBtn").addEventListener("click", ()=>$("#importFile").click());
+  $("#importFile").addEventListener("change", (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        const data = JSON.parse(r.result);
+        if(!data || !Array.isArray(data.transactions)) throw new Error("bad");
+        state = Object.assign(defaultState(), data);
+        saveState(); applyTheme(); applyLang(); applyToggles();
+        renderTxList(); updateWalletMood();
+        showToast(t().importOk);
+      }catch(err){ showToast(t().importErr); }
+    };
+    r.readAsText(f);
+    e.target.value = "";
+  });
+  $("#resetBtn").addEventListener("click", ()=>{
+    if(confirm(t().confirmReset)){
+      state = defaultState(); state.onboarded = true;
+      saveState(); applyTheme(); applyLang(); applyToggles();
+      renderTxList(); updateWalletMood();
+    }
+  });
+}
+
+/* ================== Wire up ================== */
+function bind(){
+  $("#addInBtn").addEventListener("click", ()=>openAdd("in"));
+  $("#addOutBtn").addEventListener("click", ()=>openAdd("out"));
+  $("#reportBtn").addEventListener("click", openReport);
+  $("#closeReportBtn").addEventListener("click", ()=>closeModal("reportModal"));
+  $("#saveTxBtn").addEventListener("click", saveTx);
+  $("#cancelTxBtn").addEventListener("click", ()=>closeModal("addModal"));
+
+  $("#langBtn").addEventListener("click", ()=>{
+    state.lang = state.lang==="ar" ? "en" : "ar"; saveState();
+    applyLang(); applyToggles(); renderTxList(); updateWalletMood();
+  });
+
+  // Enter on amount => save
+  $("#amountInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") saveTx(); });
+
+  // Onboarding
+  $("#onbStart").addEventListener("click", ()=>{
+    state.onboarded = true; saveState();
+    closeModal("onbModal");
+    ac(); // unlock audio on gesture
+  });
+
+  // modal backdrop close
+  $$(".modal").forEach(m=>{
+    m.addEventListener("click", (e)=>{
+      if(e.target===m && m.id!=="onbModal") m.classList.remove("open");
+    });
+  });
+}
+
+/* ================== Boot ================== */
+function boot(){
+  applyTheme();
+  applyLang();
+  applyToggles();
+  bind();
+  bindSettings();
+  renderTxList();
+  updateWalletMood();
+  if(!state.onboarded){
+    openModal("onbModal");
+  }
+}
+document.addEventListener("DOMContentLoaded", boot);
+
+// Periodic re-eval (week rollover, etc.)
+setInterval(()=>{ updateWalletMood(); }, 60*1000);
+</script>
+</body>
+</html>
